@@ -1,0 +1,15 @@
+replicaCount: 1
+
+featureX: true
+
+env:
+  - name: LOG_LEVEL
+    value: debug
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 96Mi

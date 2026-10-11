@@ -3,16 +3,34 @@ replicaCount: 1
 image:
   name: booking-service
   tag: latest
-  pullPolicy: IfNotPresent
+  # The image is loaded into Minikube with "minikube image load", there is no registry to pull from.
+  pullPolicy: Never
 
 service:
   type: ClusterIP
   port: 80
   targetPort: 8080
+  grpcPort: 9090
+
+# Feature flag: when true the service exposes GET /feature.
+featureX: false
+
+# Extra environment variables: [{ name: ..., value: ... }]
+env: []
 
 resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi
 
-livenessProbe:
-
-readinessProbe:
-
+probes:
+  path: /ping
+  liveness:
+    initialDelaySeconds: 2
+    periodSeconds: 10
+  readiness:
+    initialDelaySeconds: 1
+    periodSeconds: 5
