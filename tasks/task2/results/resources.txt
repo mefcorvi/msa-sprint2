@@ -1,0 +1,18 @@
+===== Размер образов =====
+$ docker image ls
+REPOSITORY:TAG                                                                                    SIZE
+task2-monolith:latest                                                                             403MB
+task2-booking-history-service:latest                                                              17.9MB
+task2-booking-service:latest                                                                      25.5MB
+
+===== Потребление ресурсов после прогона тестов (простой) =====
+$ docker stats --no-stream booking-service booking-history-service hotelio-monolith
+NAME                      CPU %     MEM USAGE / LIMIT
+booking-service           0.06%     6.434MiB / 14.49GiB
+booking-history-service   0.02%     4.402MiB / 14.49GiB
+hotelio-monolith          4.35%     386.6MiB / 14.49GiB
+
+===== Время старта =====
+booking-service: контейнер запущен 2026-10-11T16:33:08.142347613Z, gRPC готов 2026-10-11T16:33:08.152944309Z - 11 мс (включая подключение к БД и проверку миграций)
+$ docker logs hotelio-monolith | grep 'Started MonolithApplication'
+Started MonolithApplication in 2.702 seconds (process running for 3.272)

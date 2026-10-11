@@ -1,0 +1,82 @@
+===== Листинг через REST монолита (монолит -> gRPC-прокси -> booking-service) =====
+$ curl 'http://localhost:8084/api/bookings?userId=test-user-2'
+[{"id":1000000001,"userId":"test-user-2","hotelId":"test-hotel-1","promoCode":"TESTCODE1","discountPercent":10.0,"price":90.0,"createdAt":"2026-10-11T16:33:06.434352Z"},{"id":1000000004,"userId":"test-user-2","hotelId":"test-hotel-1","promoCode":"TESTCODE1","discountPercent":10.0,"price":90.0,"createdAt":"2026-10-11T16:33:06.636248Z"}]
+
+$ curl 'http://localhost:8084/api/bookings?userId=test-user-3'
+[{"id":1000000002,"userId":"test-user-3","hotelId":"test-hotel-1","promoCode":"","discountPercent":0.0,"price":80.0,"createdAt":"2026-10-11T16:33:06.434352Z"},{"id":1000000003,"userId":"test-user-3","hotelId":"test-hotel-1","promoCode":"","discountPercent":0.0,"price":80.0,"createdAt":"2026-10-11T16:33:06.613367Z"}]
+
+$ curl 'http://localhost:8084/api/bookings'  -- без userId: известное ограничение прокси (setUserId(null) -> NPE)
+{"timestamp":"2026-10-11T16:33:06.987+00:00","status":500,"error":"Internal Server Error","path":"/api/bookings"} [HTTP 500]
+
+===== Листинг напрямую через gRPC booking-service =====
+$ grpcurl -plaintext booking-service:9090 list
+booking.BookingService
+grpc.reflection.v1.ServerReflection
+grpc.reflection.v1alpha.ServerReflection
+
+$ grpcurl -plaintext -d '{"user_id":"test-user-2"}' booking-service:9090 booking.BookingService/ListBookings
+{
+  "bookings": [
+    {
+      "id": "1000000001",
+      "userId": "test-user-2",
+      "hotelId": "test-hotel-1",
+      "promoCode": "TESTCODE1",
+      "discountPercent": 10,
+      "price": 90,
+      "createdAt": "2026-10-11T16:33:06.434352Z"
+    },
+    {
+      "id": "1000000004",
+      "userId": "test-user-2",
+      "hotelId": "test-hotel-1",
+      "promoCode": "TESTCODE1",
+      "discountPercent": 10,
+      "price": 90,
+      "createdAt": "2026-10-11T16:33:06.636248Z"
+    }
+  ]
+}
+
+$ grpcurl -plaintext -d '{}' booking-service:9090 booking.BookingService/ListBookings  -- все брони (через gRPC работает)
+{
+  "bookings": [
+    {
+      "id": "1000000001",
+      "userId": "test-user-2",
+      "hotelId": "test-hotel-1",
+      "promoCode": "TESTCODE1",
+      "discountPercent": 10,
+      "price": 90,
+      "createdAt": "2026-10-11T16:33:06.434352Z"
+    },
+    {
+      "id": "1000000002",
+      "userId": "test-user-3",
+      "hotelId": "test-hotel-1",
+      "price": 80,
+      "createdAt": "2026-10-11T16:33:06.434352Z"
+    },
+    {
+      "id": "1000000003",
+      "userId": "test-user-3",
+      "hotelId": "test-hotel-1",
+      "price": 80,
+      "createdAt": "2026-10-11T16:33:06.613367Z"
+    },
+    {
+      "id": "1000000004",
+      "userId": "test-user-2",
+      "hotelId": "test-hotel-1",
+      "promoCode": "TESTCODE1",
+      "discountPercent": 10,
+      "price": 90,
+      "createdAt": "2026-10-11T16:33:06.636248Z"
+    }
+  ]
+}
+
+$ grpcurl -plaintext -d '{"user_id":"test-user-0","hotel_id":"test-hotel-1"}' booking-service:9090 booking.BookingService/CreateBooking  -- отказ с причиной
+ERROR:
+  Code: FailedPrecondition
+  Message: User test-user-0 is inactive

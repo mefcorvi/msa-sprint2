@@ -1,0 +1,25 @@
+===== Старая система: монолит (hotelio-db) =====
+$ docker exec hotelio-db psql -U hotelio hotelio -c 'select * from booking order by id'
+ discount_percent | price |          created_at          | id |   hotel_id   | promo_code |   user_id   
+------------------+-------+------------------------------+----+--------------+------------+-------------
+               10 |    90 | 2026-10-11 16:33:06.41616+00 |  9 | test-hotel-1 | TESTCODE1  | test-user-2
+                0 |    80 | 2026-10-11 16:33:06.41616+00 | 10 | test-hotel-1 |            | test-user-3
+(2 rows)
+
+===== Новая система: booking-service (booking-db) =====
+$ docker exec booking-db psql -U booking booking -c 'select * from booking order by id'
+     id     |   user_id   |   hotel_id   | promo_code | discount_percent | price |          created_at           
+------------+-------------+--------------+------------+------------------+-------+-------------------------------
+ 1000000001 | test-user-2 | test-hotel-1 | TESTCODE1  |               10 |    90 | 2026-10-11 16:33:06.434352+00
+ 1000000002 | test-user-3 | test-hotel-1 |            |                0 |    80 | 2026-10-11 16:33:06.434352+00
+ 1000000003 | test-user-3 | test-hotel-1 |            |                0 |    80 | 2026-10-11 16:33:06.613367+00
+ 1000000004 | test-user-2 | test-hotel-1 | TESTCODE1  |               10 |    90 | 2026-10-11 16:33:06.636248+00
+(4 rows)
+
+$ docker exec booking-db psql -U booking booking -c 'select * from outbox_event order by id'
+ id |               event_id               |   event_type   | aggregate_id |                                                                                                                                              payload                                                                                                                                              |          created_at           |         published_at          
+----+--------------------------------------+----------------+--------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------------------+-------------------------------
+  4 | fe6c5bc4-d8f1-4df1-a5ed-ec3ef944789c | BookingCreated | 1000000003   | {"eventId":"fe6c5bc4-d8f1-4df1-a5ed-ec3ef944789c","type":"BookingCreated","occurredAt":"2026-10-11T16:33:06.614395274Z","bookingId":1000000003,"userId":"test-user-3","hotelId":"test-hotel-1","promoCode":null,"discountPercent":0,"price":80,"createdAt":"2026-10-11T16:33:06.613367Z"}         | 2026-10-11 16:33:06.613489+00 | 2026-10-11 16:33:06.639496+00
+  5 | 988961e6-a565-4b12-9cf8-fb359f1e9b7c | BookingCreated | 1000000004   | {"eventId":"988961e6-a565-4b12-9cf8-fb359f1e9b7c","type":"BookingCreated","occurredAt":"2026-10-11T16:33:06.636588252Z","bookingId":1000000004,"userId":"test-user-2","hotelId":"test-hotel-1","promoCode":"TESTCODE1","discountPercent":10,"price":90,"createdAt":"2026-10-11T16:33:06.636248Z"} | 2026-10-11 16:33:06.636346+00 | 2026-10-11 16:33:06.639496+00
+(2 rows)
+
