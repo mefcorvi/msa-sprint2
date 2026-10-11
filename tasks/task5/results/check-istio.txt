@@ -1,0 +1,14 @@
+$ bash check-istio.sh
+▶️ Проверка установки Istio...
+NAME                                    READY   STATUS    RESTARTS   AGE
+istio-egressgateway-77f4cc9455-75hck    1/1     Running   0          113s
+istio-ingressgateway-6fbfdd44cc-v2vzv   1/1     Running   0          113s
+istiod-7c8df75596-n66zc                 1/1     Running   0          2m3s
+▶️ Проверка Istio инъекции в default namespace...
+"enabled"
+
+$ kubectl get pods -L version
+NAME                                  READY   STATUS    RESTARTS   AGE   VERSION
+booking-service-v1-7d7bd44c78-hkggc   2/2     Running   0          24s   v1
+booking-service-v1-7d7bd44c78-zkpdv   2/2     Running   0          24s   v1
+booking-service-v2-84cf884854-ds57s   2/2     Running   0          21s   v2

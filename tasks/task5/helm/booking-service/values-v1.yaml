@@ -1,0 +1,8 @@
+version: v1
+replicaCount: 2
+featureX: false
+service:
+  enabled: true
+env:
+  - name: LOG_LEVEL
+    value: info

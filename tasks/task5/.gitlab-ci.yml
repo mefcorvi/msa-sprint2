@@ -1,0 +1,48 @@
+stages:
+  - build
+  - test
+  - deploy
+  - tag
+
+variables:
+  IMAGE_NAME: booking-service
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA-$CI_PIPELINE_ID
+  CHART: helm/booking-service
+  SMOKE_CONTAINER: booking-service-smoke
+  SMOKE_PORT: "18080"
+
+build:
+  stage: build
+  script:
+    - docker build -t "$IMAGE_NAME:$IMAGE_TAG" booking-service
+
+unit-tests:
+  stage: test
+  script:
+    - docker build --target test booking-service
+
+test:
+  stage: test
+  needs: [build]
+  script:
+    - docker rm -f "$SMOKE_CONTAINER" >/dev/null 2>&1 || true
+    - docker run -d --name "$SMOKE_CONTAINER" -p "$SMOKE_PORT:8080" "$IMAGE_NAME:$IMAGE_TAG"
+    - for i in $(seq 1 20); do curl -fs "http://localhost:$SMOKE_PORT/ping" >/dev/null && break; sleep 1; done
+    - test "$(curl -fs "http://localhost:$SMOKE_PORT/ping")" = "pong"
+    - echo "/ping -> pong"
+  after_script:
+    - docker rm -f "$SMOKE_CONTAINER"
+
+deploy:
+  stage: deploy
+  script:
+    - minikube image load "$IMAGE_NAME:$IMAGE_TAG"
+    - for v in v1 v2; do helm upgrade --install "booking-service-$v" "$CHART" -f "$CHART/values-$v.yaml" --set image.tag="$IMAGE_TAG" --wait --timeout 3m; done
+    - kubectl apply -f istio/
+
+tag:
+  stage: tag
+  script:
+    - TAG="$IMAGE_NAME-$(date -u +%Y%m%d%H%M%S)"
+    - git tag "$TAG"
+    - echo "created git tag $TAG"

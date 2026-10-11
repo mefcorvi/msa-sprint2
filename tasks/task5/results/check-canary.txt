@@ -1,0 +1,4 @@
+$ bash check-canary.sh
+▶️ Checking canary release (90% v1, 10% v2)...
+  91 v1
+   9 v2
