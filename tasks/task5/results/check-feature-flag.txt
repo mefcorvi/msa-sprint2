@@ -1,0 +1,14 @@
+$ bash check-feature-flag.sh
+▶️ Проверка Feature Flag (X-Feature-Enabled: true)...
+With X-Feature-Enabled: true
+  /version -> v2
+  /version -> v2
+  /version -> v2
+  /version -> v2
+  /version -> v2
+  /feature -> Feature X is enabled!
+Without the header (canary: mostly v1, where /feature does not exist)
+  /feature -> HTTP 404
+Client cannot pick v2 by the internal header (the EnvoyFilter drops it)
+  18 v1
+   2 v2

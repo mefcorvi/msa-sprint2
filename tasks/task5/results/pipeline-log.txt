@@ -1,0 +1,125 @@
+parsing and downloads finished in 65 ms.
+json schema validated in 78 ms
+build      starting shell (build)
+build      $ docker build -t "$IMAGE_NAME:$IMAGE_TAG" booking-service
+build      > DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+build      >             Install the buildx component to build images with BuildKit:
+build      >             https://docs.docker.com/go/buildx/
+build      > 
+build      > Sending build context to Docker daemon  87.55kB
+build      > [1/4] STEP 1/5: FROM golang:1.26-alpine AS source
+build      > [1/4] STEP 2/5: WORKDIR /src
+build      > --> Using cache 6fc1b2ab63f291178d21e7bc65d8bc5aaaaf80d7d941cdb5877e48649c39ddc4
+build      > --> 6fc1b2ab63f2
+build      > [1/4] STEP 3/5: COPY go.mod go.sum ./
+build      > --> Using cache 083b70aa0edf3d1dd943d67d205b4f0149ba06655f7bd0860a61d7efe7ac149f
+build      > --> 083b70aa0edf
+build      > [1/4] STEP 4/5: RUN go mod download
+build      > --> Using cache 4a0e3fc4c35363ba08056d2b1076fd28832aaf49bed68e137bf626d63ca6abbe
+build      > --> 4a0e3fc4c353
+build      > [1/4] STEP 5/5: COPY . .
+build      > --> a8b814c8f324
+build      > [4/4] STEP 1/4: FROM gcr.io/distroless/static-debian13:nonroot
+build      > [4/4] STEP 2/4: COPY --from=build /out/booking-service /booking-service
+build      > [3/4] STEP 1/2: FROM a8b814c8f324105922ec64132096769bfc19a543203ad256227be6ee56a1a44f AS build
+build      > [3/4] STEP 2/2: RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/booking-service ./cmd/booking-service
+build      > still running...
+build      > --> e2e573f74c80
+build      > --> 25c57caac191
+build      > [4/4] STEP 3/4: EXPOSE 8080 9090
+build      > --> a383c26ce0d0
+build      > [4/4] STEP 4/4: ENTRYPOINT ["/booking-service"]
+build      > [4/4] COMMIT docker.io/library/booking-service:7f244f91-1000
+build      > --> f1f5ae18bf6f
+build      > Successfully tagged docker.io/library/booking-service:7f244f91-1000
+build      > f1f5ae18bf6fbb0361e1382e558f6dc163fa67bec5b43058b517ccb95526e0e9
+build      > Successfully built f1f5ae18bf6f
+build      > Successfully tagged booking-service:7f244f91-1000
+build      finished in 15 s
+unit-tests starting shell (test)
+test       starting shell (test)
+unit-tests $ docker build --target test booking-service
+test       $ docker rm -f "$SMOKE_CONTAINER" >/dev/null 2>&1 || true
+unit-tests > DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+unit-tests >             Install the buildx component to build images with BuildKit:
+unit-tests >             https://docs.docker.com/go/buildx/
+unit-tests > 
+test       $ docker run -d --name "$SMOKE_CONTAINER" -p "$SMOKE_PORT:8080" "$IMAGE_NAME:$IMAGE_TAG"
+unit-tests > Sending build context to Docker daemon  87.55kB
+unit-tests > [1/2] STEP 1/5: FROM golang:1.26-alpine AS source
+test       > 57fd836567f01191cbd3fd86763aa20e0009de45ec0f83b05bed4792ea8aeaf9
+test       $ for i in $(seq 1 20); do curl -fs "http://localhost:$SMOKE_PORT/ping" >/dev/null && break; sleep 1; done
+test       $ test "$(curl -fs "http://localhost:$SMOKE_PORT/ping")" = "pong"
+test       $ echo "/ping -> pong"
+test       > /ping -> pong
+test       Running after script...
+test       $ docker rm -f "$SMOKE_CONTAINER"
+test       > booking-service-smoke
+test       finished in 441 ms
+unit-tests > [1/2] STEP 2/5: WORKDIR /src
+unit-tests > --> Using cache 6fc1b2ab63f291178d21e7bc65d8bc5aaaaf80d7d941cdb5877e48649c39ddc4
+unit-tests > --> 6fc1b2ab63f2
+unit-tests > [1/2] STEP 3/5: COPY go.mod go.sum ./
+unit-tests > --> Using cache 083b70aa0edf3d1dd943d67d205b4f0149ba06655f7bd0860a61d7efe7ac149f
+unit-tests > --> 083b70aa0edf
+unit-tests > [1/2] STEP 4/5: RUN go mod download
+unit-tests > --> Using cache 4a0e3fc4c35363ba08056d2b1076fd28832aaf49bed68e137bf626d63ca6abbe
+unit-tests > --> 4a0e3fc4c353
+unit-tests > [1/2] STEP 5/5: COPY . .
+unit-tests > --> Using cache a8b814c8f324105922ec64132096769bfc19a543203ad256227be6ee56a1a44f
+unit-tests > --> a8b814c8f324
+unit-tests > [2/2] STEP 1/2: FROM a8b814c8f324105922ec64132096769bfc19a543203ad256227be6ee56a1a44f AS test
+unit-tests > [2/2] STEP 2/2: RUN go test ./...
+unit-tests > ?   	hotelio/booking-service/cmd/booking-service	[no test files]
+unit-tests > ok  	hotelio/booking-service/internal/booking	0.002s
+unit-tests > ok  	hotelio/booking-service/internal/config	0.002s
+unit-tests > ?   	hotelio/booking-service/internal/grpcapi	[no test files]
+unit-tests > ok  	hotelio/booking-service/internal/httpapi	0.002s
+unit-tests > ok  	hotelio/booking-service/internal/monolith	0.004s
+unit-tests > ?   	hotelio/booking-service/internal/outbox	[no test files]
+unit-tests > ?   	hotelio/booking-service/internal/pb	[no test files]
+unit-tests > ?   	hotelio/booking-service/internal/postgres	[no test files]
+unit-tests > [2/2] COMMIT
+unit-tests > --> 97b9b8766ac8
+unit-tests > 97b9b8766ac8a5150a09ab1865e759a47020bfb14107e9384808b1989ee199e8
+unit-tests > Successfully built 97b9b8766ac8
+unit-tests finished in 13 s
+deploy     starting shell (deploy)
+deploy     $ minikube image load "$IMAGE_NAME:$IMAGE_TAG"
+deploy     $ for v in v1 v2; do helm upgrade --install "booking-service-$v" "$CHART" -f "$CHART/values-$v.yaml" --set image.tag="$IMAGE_TAG" --wait --timeout 3m; done
+deploy     > Release "booking-service-v1" does not exist. Installing it now.
+deploy     > NAME: booking-service-v1
+deploy     > LAST DEPLOYED: Sun Oct 11 20:07:22 2026
+deploy     > NAMESPACE: default
+deploy     > STATUS: deployed
+deploy     > REVISION: 1
+deploy     > DESCRIPTION: Install complete
+deploy     > TEST SUITE: None
+deploy     > Release "booking-service-v2" does not exist. Installing it now.
+deploy     > NAME: booking-service-v2
+deploy     > LAST DEPLOYED: Sun Oct 11 20:07:25 2026
+deploy     > NAMESPACE: default
+deploy     > STATUS: deployed
+deploy     > REVISION: 1
+deploy     > DESCRIPTION: Install complete
+deploy     > TEST SUITE: None
+deploy     $ kubectl apply -f istio/
+deploy     > destinationrule.networking.istio.io/booking-service created
+deploy     > Warning: EnvoyFilter exposes internal implementation details that may change at any time. Prefer other APIs if possible, and exercise extreme caution, especially around upgrades.
+deploy     > envoyfilter.networking.istio.io/booking-feature-flag created
+deploy     > gateway.networking.istio.io/booking-gateway created
+deploy     > virtualservice.networking.istio.io/booking-service created
+deploy     finished in 9.62 s
+tag        starting shell (tag)
+tag        $ TAG="$IMAGE_NAME-$(date -u +%Y%m%d%H%M%S)"
+tag        $ git tag "$TAG"
+tag        $ echo "created git tag $TAG"
+tag        > created git tag booking-service-20261011180728
+tag        finished in 29 ms
+
+ PASS  build     
+ PASS  unit-tests
+ PASS  test      
+ PASS  deploy    
+ PASS  tag       
+pipeline finished in 38 s

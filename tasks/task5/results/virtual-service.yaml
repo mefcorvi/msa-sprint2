@@ -1,0 +1,45 @@
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: booking-service
+  namespace: default
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - booking-gateway
+  http:
+    - name: feature-flag
+      match:
+        - headers:
+            x-booking-version:
+              exact: v2
+      route:
+        - destination:
+            host: booking-service.default.svc.cluster.local
+            subset: v2
+            port:
+              number: 80
+      retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: 5xx,connect-failure,refused-stream,reset
+    - name: canary
+      route:
+        - destination:
+            host: booking-service.default.svc.cluster.local
+            subset: v1-with-fallback
+            port:
+              number: 80
+          weight: 90
+        - destination:
+            host: booking-service.default.svc.cluster.local
+            subset: v2
+            port:
+              number: 80
+          weight: 10
+      retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: 5xx,connect-failure,refused-stream,reset
+      timeout: 10s

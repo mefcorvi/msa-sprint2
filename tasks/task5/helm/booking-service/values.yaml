@@ -1,0 +1,37 @@
+appName: booking-service
+version: v1
+
+replicaCount: 1
+
+image:
+  name: booking-service
+  tag: latest
+  pullPolicy: Never
+
+service:
+  enabled: true
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+  grpcPort: 9090
+
+featureX: false
+
+env: []
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi
+
+probes:
+  path: /ping
+  liveness:
+    initialDelaySeconds: 2
+    periodSeconds: 10
+  readiness:
+    initialDelaySeconds: 1
+    periodSeconds: 5

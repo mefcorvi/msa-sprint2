@@ -1,0 +1,26 @@
+===== 1. Гасим один из подов v1 =====
+$ kubectl delete pod booking-service-v1-7d7bd44c78-hkggc --wait=false
+pod "booking-service-v1-7d7bd44c78-hkggc" deleted from default namespace
+$ bash check-fallback.sh
+▶️ Testing fallback route...
+  19 v1 HTTP 200
+   1 v2 HTTP 200
+Fallback route working
+
+===== 2. Гасим все поды v1: трафик уходит на v2 =====
+$ kubectl scale deployment booking-service-v1 --replicas=0
+deployment.apps/booking-service-v1 scaled
+$ kubectl get pods -L version
+NAME                                  READY   STATUS    RESTARTS   AGE   VERSION
+booking-service-v2-84cf884854-ds57s   2/2     Running   0          38s   v2
+$ bash check-fallback.sh
+▶️ Testing fallback route...
+  20 v2 HTTP 200
+Fallback route working
+
+===== Восстановление =====
+$ kubectl scale deployment booking-service-v1 --replicas=2
+deployment.apps/booking-service-v1 scaled
+Waiting for deployment "booking-service-v1" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "booking-service-v1" rollout to finish: 1 of 2 updated replicas are available...
+deployment "booking-service-v1" successfully rolled out
