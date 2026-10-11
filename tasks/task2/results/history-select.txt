@@ -1,0 +1,56 @@
+===== История бронирований (history-db, заполняется booking-history-service из Kafka) =====
+$ docker exec history-db psql -U history history -c 'select * from booking_history order by booking_id'
+ booking_id |               event_id               |   user_id   |   hotel_id   | promo_code | discount_percent | price |          created_at           |          received_at          
+------------+--------------------------------------+-------------+--------------+------------+------------------+-------+-------------------------------+-------------------------------
+ 1000000003 | fe6c5bc4-d8f1-4df1-a5ed-ec3ef944789c | test-user-3 | test-hotel-1 |            |                0 |    80 | 2026-10-11 16:33:06.613367+00 | 2026-10-11 16:33:06.644554+00
+ 1000000004 | 988961e6-a565-4b12-9cf8-fb359f1e9b7c | test-user-2 | test-hotel-1 | TESTCODE1  |               10 |    90 | 2026-10-11 16:33:06.636248+00 | 2026-10-11 16:33:06.645214+00
+(2 rows)
+
+$ docker exec history-db psql -U history history -c 'select * from booking_stats_by_day'
+    day     | bookings | revenue | with_promo 
+------------+----------+---------+------------
+ 2026-10-11 |        2 |     170 |          1
+(1 row)
+
+$ docker exec history-db psql -U history history -c 'select * from booking_stats_by_hotel'
+   hotel_id   | bookings | unique_users | revenue | avg_price 
+--------------+----------+--------------+---------+-----------
+ test-hotel-1 |        2 |            2 |     170 |        85
+(1 row)
+
+$ docker exec history-db psql -U history history -c 'select * from booking_stats_by_user order by user_id'
+   user_id   | bookings | hotels | spent |        last_booking_at        
+-------------+----------+--------+-------+-------------------------------
+ test-user-2 |        1 |      1 |    90 | 2026-10-11 16:33:06.636248+00
+ test-user-3 |        1 |      1 |    80 | 2026-10-11 16:33:06.613367+00
+(2 rows)
+
+===== Логи booking-history-service =====
+{"level":"info","service":"booking-history-service","topic":"booking.events","group":"booking-history-service","time":"2026-10-11T16:32:11.994205886Z","message":"consuming"}
+{"level":"info","service":"booking-history-service","bookingId":4,"userId":"test-user-2","hotelId":"test-hotel-1","price":90,"time":"2026-10-11T16:32:30.191515989Z","message":"recorded booking"}
+{"level":"info","service":"booking-history-service","bookingId":3,"userId":"test-user-3","hotelId":"test-hotel-1","price":80,"time":"2026-10-11T16:32:30.191988448Z","message":"recorded booking"}
+{"level":"info","service":"booking-history-service","bookingId":1000000000,"userId":"test-user-2","hotelId":"test-hotel-1","price":100,"time":"2026-10-11T16:32:32.146088683Z","message":"recorded booking"}
+{"level":"info","service":"booking-history-service","bookingId":1000000003,"userId":"test-user-3","hotelId":"test-hotel-1","price":80,"time":"2026-10-11T16:33:06.645039776Z","message":"recorded booking"}
+{"level":"info","service":"booking-history-service","bookingId":1000000004,"userId":"test-user-2","hotelId":"test-hotel-1","price":90,"time":"2026-10-11T16:33:06.64552611Z","message":"recorded booking"}
+
+===== Логи booking-service: создание броней и публикация событий =====
+{"level":"warn","service":"booking-service","reason":"Hotel test-hotel-3 is not operational","time":"2026-10-11T16:32:29.873061477Z","message":"booking rejected"}
+{"level":"info","service":"booking-service","userId":"test-user-2","hotelId":"test-hotel-2","promoCode":"","time":"2026-10-11T16:32:29.880649456Z","message":"creating booking"}
+{"level":"warn","service":"booking-service","reason":"Hotel test-hotel-2 is not trusted based on reviews","time":"2026-10-11T16:32:29.887583642Z","message":"booking rejected"}
+{"level":"info","service":"booking-service","count":2,"topic":"booking.events","time":"2026-10-11T16:32:30.187930354Z","message":"published outbox events"}
+{"level":"info","service":"booking-service","userId":"test-user-2","hotelId":"test-hotel-1","promoCode":"","time":"2026-10-11T16:32:31.683135393Z","message":"creating booking"}
+{"level":"info","service":"booking-service","base":100,"discount":0,"final":100,"time":"2026-10-11T16:32:31.693533381Z","message":"final price calculated"}
+{"level":"info","service":"booking-service","count":1,"topic":"booking.events","time":"2026-10-11T16:32:32.143026424Z","message":"published outbox events"}
+{"level":"info","service":"booking-service","userId":"test-user-3","hotelId":"test-hotel-1","promoCode":"","time":"2026-10-11T16:33:06.603620827Z","message":"creating booking"}
+{"level":"info","service":"booking-service","base":80,"discount":0,"final":80,"time":"2026-10-11T16:33:06.613344187Z","message":"final price calculated"}
+{"level":"info","service":"booking-service","userId":"test-user-2","hotelId":"test-hotel-1","promoCode":"TESTCODE1","time":"2026-10-11T16:33:06.62582343Z","message":"creating booking"}
+{"level":"info","service":"booking-service","base":100,"discount":10,"final":90,"time":"2026-10-11T16:33:06.636237543Z","message":"final price calculated"}
+{"level":"info","service":"booking-service","count":2,"topic":"booking.events","time":"2026-10-11T16:33:06.642734644Z","message":"published outbox events"}
+{"level":"info","service":"booking-service","userId":"test-user-0","hotelId":"test-hotel-1","promoCode":"","time":"2026-10-11T16:33:06.653753092Z","message":"creating booking"}
+{"level":"warn","service":"booking-service","reason":"User test-user-0 is inactive","time":"2026-10-11T16:33:06.655892264Z","message":"booking rejected"}
+{"level":"info","service":"booking-service","userId":"test-user-2","hotelId":"test-hotel-3","promoCode":"","time":"2026-10-11T16:33:06.6628067Z","message":"creating booking"}
+{"level":"warn","service":"booking-service","reason":"Hotel test-hotel-3 is not operational","time":"2026-10-11T16:33:06.666723794Z","message":"booking rejected"}
+{"level":"info","service":"booking-service","userId":"test-user-2","hotelId":"test-hotel-2","promoCode":"","time":"2026-10-11T16:33:06.673338479Z","message":"creating booking"}
+{"level":"warn","service":"booking-service","reason":"Hotel test-hotel-2 is not trusted based on reviews","time":"2026-10-11T16:33:06.67904287Z","message":"booking rejected"}
+{"level":"info","service":"booking-service","userId":"test-user-0","hotelId":"test-hotel-1","promoCode":"","time":"2026-10-11T16:33:07.484122904Z","message":"creating booking"}
+{"level":"warn","service":"booking-service","reason":"User test-user-0 is inactive","time":"2026-10-11T16:33:07.486840829Z","message":"booking rejected"}
