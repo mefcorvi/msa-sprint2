@@ -112,3 +112,19 @@ pong
 kubectl port-forward svc/booking-service 8080:80
 curl http://localhost:8080/ping
 ```
+
+
+# Развёртывание в Minikube (решение)
+
+Кластер использует отдельный kubeconfig, чтобы не менять рабочие контексты `kubectl`.
+
+```bash
+export KUBECONFIG=$HOME/.kube/hotelio-minikube
+minikube start --driver=docker   # Podman: --driver=podman, машина в rootful-режиме
+
+gitlab-ci-local                  # сборка, тесты, деплой в Minikube и git-тег
+gitlab-ci-local --variable VALUES_FILE=values-prod.yaml deploy   # деплой с prod-значениями
+
+bash check-status.sh
+bash check-dns.sh
+```

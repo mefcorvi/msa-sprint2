@@ -1,0 +1,7 @@
+$ kubectl get pods,services -o wide
+NAME                                  READY   STATUS    RESTARTS   AGE   IP           NODE       NOMINATED NODE   READINESS GATES
+pod/booking-service-6d75c8895-cqw94   1/1     Running   0          69s   10.244.0.3   minikube   <none>           <none>
+
+NAME                      TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)           AGE     SELECTOR
+service/booking-service   ClusterIP   10.101.181.58   <none>        80/TCP,9090/TCP   69s     app=booking-service
+service/kubernetes        ClusterIP   10.96.0.1       <none>        443/TCP           2m18s   <none>

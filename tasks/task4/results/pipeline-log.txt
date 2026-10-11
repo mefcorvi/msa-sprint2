@@ -1,0 +1,114 @@
+parsing and downloads finished in 61 ms.
+json schema validated in 73 ms
+build      starting shell (build)
+build      $ docker build -t "$IMAGE_NAME:$IMAGE_TAG" booking-service
+build      > DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+build      >             Install the buildx component to build images with BuildKit:
+build      >             https://docs.docker.com/go/buildx/
+build      > 
+build      > Sending build context to Docker daemon  86.53kB
+build      > [1/4] STEP 1/5: FROM golang:1.26-alpine AS source
+build      > [1/4] STEP 2/5: WORKDIR /src
+build      > --> Using cache 6fc1b2ab63f291178d21e7bc65d8bc5aaaaf80d7d941cdb5877e48649c39ddc4
+build      > --> 6fc1b2ab63f2
+build      > [1/4] STEP 3/5: COPY go.mod go.sum ./
+build      > --> Using cache 083b70aa0edf3d1dd943d67d205b4f0149ba06655f7bd0860a61d7efe7ac149f
+build      > --> 083b70aa0edf
+build      > [1/4] STEP 4/5: RUN go mod download
+build      > --> Using cache 4a0e3fc4c35363ba08056d2b1076fd28832aaf49bed68e137bf626d63ca6abbe
+build      > --> 4a0e3fc4c353
+build      > [1/4] STEP 5/5: COPY . .
+build      > --> eabb8eb6dd20
+build      > [4/4] STEP 1/4: FROM gcr.io/distroless/static-debian13:nonroot
+build      > [4/4] STEP 2/4: COPY --from=build /out/booking-service /booking-service
+build      > [3/4] STEP 1/2: FROM eabb8eb6dd20284f7a8406dd354a5b634e7c0fe68ab6b0acc155a863d7c53da5 AS build
+build      > [3/4] STEP 2/2: RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/booking-service ./cmd/booking-service
+build      > still running...
+build      > --> f3d3fb2f73c9
+build      > --> 95773f568be0
+build      > [4/4] STEP 3/4: EXPOSE 8080 9090
+build      > --> 2e1ad1e35ad8
+build      > [4/4] STEP 4/4: ENTRYPOINT ["/booking-service"]
+build      > [4/4] COMMIT docker.io/library/booking-service:7f244f91
+build      > --> 698e0821b647
+build      > Successfully tagged docker.io/library/booking-service:7f244f91
+build      > 698e0821b6473a118d585f1b97e4b413603499c51a0b878f13d7bd6fd15548d7
+build      > Successfully built 698e0821b647
+build      > Successfully tagged booking-service:7f244f91
+build      finished in 16 s
+unit-tests starting shell (test)
+test       starting shell (test)
+unit-tests $ docker build --target test booking-service
+test       $ docker rm -f "$SMOKE_CONTAINER" >/dev/null 2>&1 || true
+unit-tests > DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+unit-tests >             Install the buildx component to build images with BuildKit:
+unit-tests >             https://docs.docker.com/go/buildx/
+unit-tests > 
+test       $ docker run -d --name "$SMOKE_CONTAINER" -p "$SMOKE_PORT:8080" "$IMAGE_NAME:$IMAGE_TAG"
+unit-tests > Sending build context to Docker daemon  86.53kB
+unit-tests > [1/2] STEP 1/5: FROM golang:1.26-alpine AS source
+test       > 176a7e0d1d779bc49b0438fce07b3005787231b09a9434547b7d0ddaaccb328f
+test       $ for i in $(seq 1 20); do curl -fs "http://localhost:$SMOKE_PORT/ping" >/dev/null && break; sleep 1; done
+test       $ test "$(curl -fs "http://localhost:$SMOKE_PORT/ping")" = "pong"
+test       $ echo "/ping -> pong"
+test       > /ping -> pong
+test       Running after script...
+test       $ docker rm -f "$SMOKE_CONTAINER"
+test       > booking-service-smoke
+test       finished in 222 ms
+unit-tests > [1/2] STEP 2/5: WORKDIR /src
+unit-tests > --> Using cache 6fc1b2ab63f291178d21e7bc65d8bc5aaaaf80d7d941cdb5877e48649c39ddc4
+unit-tests > --> 6fc1b2ab63f2
+unit-tests > [1/2] STEP 3/5: COPY go.mod go.sum ./
+unit-tests > --> Using cache 083b70aa0edf3d1dd943d67d205b4f0149ba06655f7bd0860a61d7efe7ac149f
+unit-tests > --> 083b70aa0edf
+unit-tests > [1/2] STEP 4/5: RUN go mod download
+unit-tests > --> Using cache 4a0e3fc4c35363ba08056d2b1076fd28832aaf49bed68e137bf626d63ca6abbe
+unit-tests > --> 4a0e3fc4c353
+unit-tests > [1/2] STEP 5/5: COPY . .
+unit-tests > --> Using cache eabb8eb6dd20284f7a8406dd354a5b634e7c0fe68ab6b0acc155a863d7c53da5
+unit-tests > --> eabb8eb6dd20
+unit-tests > [2/2] STEP 1/2: FROM eabb8eb6dd20284f7a8406dd354a5b634e7c0fe68ab6b0acc155a863d7c53da5 AS test
+unit-tests > [2/2] STEP 2/2: RUN go test ./...
+unit-tests > still running...
+unit-tests > ?   	hotelio/booking-service/cmd/booking-service	[no test files]
+unit-tests > ok  	hotelio/booking-service/internal/booking	0.002s
+unit-tests > ok  	hotelio/booking-service/internal/config	0.002s
+unit-tests > ?   	hotelio/booking-service/internal/grpcapi	[no test files]
+unit-tests > ok  	hotelio/booking-service/internal/httpapi	0.002s
+unit-tests > ok  	hotelio/booking-service/internal/monolith	0.004s
+unit-tests > ?   	hotelio/booking-service/internal/outbox	[no test files]
+unit-tests > ?   	hotelio/booking-service/internal/pb	[no test files]
+unit-tests > ?   	hotelio/booking-service/internal/postgres	[no test files]
+unit-tests > [2/2] COMMIT
+unit-tests > --> 52086bb182c3
+unit-tests > 52086bb182c320820de133bcca5c69f236c4f18a75348b177634b19b2f52b177
+unit-tests > Successfully built 52086bb182c3
+unit-tests finished in 14 s
+deploy     starting shell (deploy)
+deploy     $ minikube image load "$IMAGE_NAME:$IMAGE_TAG"
+deploy     $ helm upgrade --install "$RELEASE" helm/booking-service -f "helm/booking-service/$VALUES_FILE" --set image.tag="$IMAGE_TAG" --wait --timeout 3m
+deploy     > Release "booking-service" does not exist. Installing it now.
+deploy     > NAME: booking-service
+deploy     > LAST DEPLOYED: Sun Oct 11 20:02:54 2026
+deploy     > NAMESPACE: default
+deploy     > STATUS: deployed
+deploy     > REVISION: 1
+deploy     > DESCRIPTION: Install complete
+deploy     > TEST SUITE: None
+deploy     $ kubectl rollout status deployment/"$RELEASE" --timeout 2m
+deploy     > deployment "booking-service" successfully rolled out
+deploy     finished in 5.9 s
+tag        starting shell (tag)
+tag        $ TAG="$RELEASE-$(date -u +%Y%m%d%H%M%S)"
+tag        $ git tag "$TAG"
+tag        $ echo "created git tag $TAG"
+tag        > created git tag booking-service-20261011180257
+tag        finished in 25 ms
+
+ PASS  build     
+ PASS  unit-tests
+ PASS  test      
+ PASS  deploy    
+ PASS  tag       
+pipeline finished in 36 s
