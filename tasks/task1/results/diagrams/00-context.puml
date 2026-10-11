@@ -1,0 +1,24 @@
+@startuml 00-context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Hotelio - диаграмма контекста (C4, уровень 1)
+
+LAYOUT_WITH_LEGEND()
+
+Person(customer, "Клиент", "Ищет и бронирует отели через web и mobile, смотрит свои брони")
+Person(analyst, "Отдел аналитики", "Нужна статистика бронирований по пользователям, отелям, дням")
+Person(ops, "Команда эксплуатации", "Разработчики, DevOps, тестировщик: выкатка, мониторинг, инциденты")
+System_Ext(partner, "Партнёрские каналы", "Внешние системы, бронирующие через API Hotelio")
+
+System(hotelio, "Hotelio", "Платформа бронирования отелей: каталог, отзывы, промокоды, пользователи, бронирования")
+
+System_Ext(cloud, "Облачная инфраструктура", "Managed PostgreSQL, Kubernetes (целевое состояние)")
+System_Ext(obs, "Observability", "Метрики, трейсы, логи")
+
+Rel(customer, hotelio, "Поиск, бронирование, личный кабинет", "HTTPS: REST сейчас, GraphQL в целевом состоянии")
+Rel(partner, hotelio, "Создание и просмотр броней", "HTTPS/REST")
+Rel(analyst, hotelio, "Статистика бронирований", "SQL/отчёты из сервиса истории")
+Rel(ops, hotelio, "Выкатка и сопровождение", "CI/CD")
+Rel(hotelio, cloud, "Размещается в")
+Rel(hotelio, obs, "Телеметрия")
+@enduml

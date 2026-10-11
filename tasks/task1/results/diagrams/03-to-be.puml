@@ -1,0 +1,48 @@
+@startuml 03-to-be
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Hotelio - целевое состояние (~1 год)
+
+LAYOUT_WITH_LEGEND()
+
+Person(user, "Клиент", "Web / mobile")
+Person_Ext(partner, "Партнёрский канал")
+
+System_Boundary(k8s, "Kubernetes + Istio service mesh (mTLS, canary, retries, circuit breaking)") {
+  Container(edge, "API Gateway", "Ingress / Istio Gateway", "Аутентификация (JWT), rate limiting")
+  Container(bff, "GraphQL BFF", "Node.js, TypeScript, Apollo Federation", "Шлюз и субграфы: единая\nGraphQL-схема для фронтенда")
+  Container(partnerApi, "Partner REST API", "", "Стабильный публичный контракт")
+
+  Container(userSvc, "user-service", "Go", "Профиль, статус, блэклист, VIP")
+  Container(catalogSvc, "hotel-service", "Go", "Каталог отелей, цены, доступность")
+  Container(reviewSvc, "review-service", "Go", "Отзывы, рейтинг, trusted")
+  Container(promoSvc, "promo-service", "Go", "Промокоды и правила скидок")
+  Container(bookingSvc, "booking-service", "Go", "Бронирования, расчёт цены")
+  Container(historySvc, "booking-history-service", "Go", "История и статистика")
+
+}
+
+ContainerQueue(kafka, "Kafka", "managed, облако, 3+ брокера", "Доменные события")
+
+ContainerDb(dbs, "БД на сервис", "PostgreSQL (managed, облако)", "user / hotel / review / promo / booking / history")
+System_Ext(obs, "Observability", "OpenTelemetry -> Prometheus/Grafana, Tempo/Jaeger, Loki")
+
+Rel(user, edge, "HTTPS")
+Rel(partner, edge, "HTTPS")
+Rel(edge, bff, "GraphQL")
+Rel(edge, partnerApi, "REST")
+Rel(bff, bookingSvc, "Данные для схемы", "gRPC")
+Rel(bff, catalogSvc, "Данные для схемы", "gRPC")
+Rel(bff, reviewSvc, "Данные для схемы", "gRPC")
+Rel(bff, userSvc, "Данные для схемы", "gRPC")
+Rel(partnerApi, bookingSvc, "gRPC")
+Rel(bookingSvc, userSvc, "gRPC")
+Rel(bookingSvc, promoSvc, "gRPC")
+Rel(bookingSvc, catalogSvc, "gRPC")
+Rel(bookingSvc, kafka, "BookingCreated / Cancelled")
+Rel(reviewSvc, kafka, "HotelRatingChanged")
+Rel(kafka, catalogSvc, "рейтинг, доступность")
+Rel(kafka, historySvc, "события бронирований")
+Rel(bookingSvc, dbs, "своя схема/инстанс")
+Rel(k8s, obs, "метрики, трейсы, логи")
+@enduml

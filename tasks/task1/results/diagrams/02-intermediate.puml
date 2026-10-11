@@ -1,0 +1,49 @@
+@startuml 02-intermediate
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Hotelio - промежуточное состояние (~2 месяца)
+
+LAYOUT_WITH_LEGEND()
+
+Person(user, "Клиент", "Web / mobile, партнёрские каналы")
+Person(analyst, "Отдел аналитики")
+
+System_Boundary(hotelio, "Hotelio") {
+  Container(gateway, "GraphQL Gateway", "Apollo Gateway, Node.js", "Личный кабинет: единая GraphQL-схема\nиз схем сервисов, пробрасывает userid")
+  Container(bookingSubgraph, "booking-subgraph", "Node.js, TypeScript", "Брони пользователя;\nдоступ только к своим броням")
+  Container(hotelSubgraph, "hotel-subgraph", "Node.js, TypeScript", "Данные отелей для броней")
+
+  Container(monolith, "Monolith (заморожен)", "Spring Boot", "User, Hotel, Promo, Review.\nСоздание и листинг броней проксируются\nв booking-service. Новые фичи не добавляются")
+  ContainerDb(monoDb, "Monolith DB", "PostgreSQL", "app_user, hotel, promo_code, review,\nbooking (legacy, для отката)")
+
+  Container(bookingSvc, "booking-service", "Go, gRPC", "Владелец бронирований: валидация,\nцена, скидка, запись.\nМонолит - только через ACL")
+  ContainerDb(bookingDb, "Booking DB", "PostgreSQL", "booking, outbox_event")
+
+  ContainerQueue(kafka, "Kafka", "Confluent 7.2", "booking.events\n(создаёт booking-service)")
+
+  Container(historySvc, "booking-history-service", "Go", "Идемпотентно сохраняет\nисторию бронирований")
+  ContainerDb(historyDb, "History DB", "PostgreSQL", "booking_history,\nпредставления статистики")
+
+  Container(legacySync, "legacy-booking-sync (временно)", "Kafka consumer", "Пишет новые брони в legacy-таблицу,\nчтобы откат не терял данные")
+}
+
+Rel(user, monolith, "Поиск, бронирование", "REST")
+Rel(user, gateway, "Личный кабинет", "GraphQL")
+Rel(gateway, bookingSubgraph, "subgraph")
+Rel(gateway, hotelSubgraph, "subgraph")
+Rel(bookingSubgraph, bookingSvc, "ListBookings", "gRPC")
+Rel(hotelSubgraph, monolith, "Данные отелей", "REST")
+
+Rel(monolith, bookingSvc, "CreateBooking / ListBookings", "gRPC")
+Rel(bookingSvc, monolith, "Пользователь, отель, отзывы, промокод", "REST через ACL, таймауты")
+Rel(monolith, monoDb, "Read/Write")
+Rel(bookingSvc, bookingDb, "Read/Write")
+Rel(bookingSvc, kafka, "BookingCreated", "outbox")
+
+Rel(kafka, historySvc, "BookingCreated")
+Rel(historySvc, historyDb, "Read/Write")
+Rel(analyst, historyDb, "Статистика", "SQL")
+
+Rel(kafka, legacySync, "BookingCreated")
+Rel(legacySync, monoDb, "Write booking")
+@enduml
