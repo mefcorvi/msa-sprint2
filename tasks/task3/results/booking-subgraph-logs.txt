@@ -1,0 +1,5 @@
+$ docker logs booking-subgraph  (после двух запросов: свои бронирования и чужие)
+Enabling inline tracing for this subgraph. To disable, use ApolloServerPluginInlineTraceDisabled.
+{"msg":"booking subgraph ready","url":"http://localhost:4001/","bookingServiceAddr":"booking-service:9090"}
+{"msg":"bookings returned","userId":"test-user-2","count":2}
+{"msg":"bookings access denied","requesterId":"test-user-3","userId":"test-user-2"}
