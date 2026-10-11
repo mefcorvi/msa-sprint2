@@ -1,0 +1,37 @@
+@startuml 04-booking-strangler
+title Создание брони после выноса booking-service (Strangler Fig, шаг 1)
+
+actor "Клиент" as C
+participant "Monolith\nBookingController" as BC
+participant "GrpcBookingService\n(прокси в монолите)" as P
+participant "booking-service" as BS
+participant "Monolith REST\n/api/users, /api/hotels,\n/api/reviews, /api/promos" as M
+database "Booking DB" as BDB
+queue "Kafka\nbooking.events" as K
+participant "booking-history-service" as H
+participant "Monolith\nlegacy booking (read-model)" as L
+
+C -> BC : POST /api/bookings?userId&hotelId&promoCode
+BC -> P : createBooking(...)
+note right of P : @Primary-бин, включается env\nBOOKING_SERVICE_EXTERNAL_HOST/PORT;\nпроксирует create и list;\nоткат - убрать env и перезапустить
+P -> BS : gRPC CreateBooking(BookingRequest)
+BS -> M : GET /api/users/{id}
+BS -> M : GET /api/hotels/{id}
+BS -> M : GET /api/reviews/hotel/{id}/trusted
+opt promoCode задан
+  BS -> M : POST /api/promos/validate
+end
+alt проверка не пройдена
+  BS --> P : INVALID_ARGUMENT / FAILED_PRECONDITION
+  P --> BC : исключение
+  BC --> C : 500 (как сейчас; 4xx - после согласования с клиентами)
+else успех
+  BS -> BDB : BEGIN; INSERT booking; INSERT outbox(BookingCreated); COMMIT
+  BS --> P : BookingResponse(id, price, discount, createdAt)
+  P --> BC : Booking
+  BC --> C : 200 JSON (контракт не меняется)
+  BDB -> K : outbox relay -> BookingCreated
+  K -> H : BookingCreated -> статистика
+  K -> L : BookingCreated -> INSERT в legacy booking\n(откат на монолит без потери данных)
+end
+@enduml

@@ -1,0 +1,41 @@
+@startuml 01-as-is
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title Hotelio - текущее состояние (as-is)
+
+LAYOUT_WITH_LEGEND()
+
+Person(user, "Клиент / партнёр", "Web, mobile, партнёрские каналы")
+
+System_Boundary(hotelio, "Hotelio Monolith (Spring Boot, одно приложение)") {
+  Component(api, "REST-контроллеры", "Spring MVC", "/api/bookings, /api/hotels, /api/promos, /api/reviews, /api/users\nбез аутентификации, userId - query-параметр")
+  Component(booking, "BookingService", "Java", "Оркестратор: 4 синхронные зависимости,\nрасчёт цены и скидки")
+  Component(userSvc, "AppUserService", "Java", "Статус, блэклист, VIP")
+  Component(hotelSvc, "HotelService", "Java", "Каталог отелей, флаги operational / fullyBooked")
+  Component(promoSvc, "PromoCodeService", "Java", "Валидация промокодов\n(зависит от AppUserService)")
+  Component(reviewSvc, "ReviewService", "Java", "Отзывы, 'надёжность' отеля\n(грузит все отзывы отеля в память)")
+  Component(grpcProxy, "GrpcBookingService", "p-o-y-1.0.0.jar", "Готовый прокси на внешний gRPC booking-service;\nвключается env BOOKING_SERVICE_EXTERNAL_*")
+}
+
+ContainerDb(db, "Monolith DB", "PostgreSQL", "app_user, hotel, booking, promo_code, review")
+
+Rel(user, api, "HTTP/JSON")
+Rel(api, booking, "")
+Rel(api, userSvc, "")
+Rel(api, hotelSvc, "")
+Rel(api, promoSvc, "")
+Rel(api, reviewSvc, "")
+Rel(api, db, "ReviewController -> репозиторий напрямую")
+Rel(booking, userSvc, "isActive / isBlacklisted / status")
+Rel(booking, hotelSvc, "operational / fullyBooked")
+Rel(booking, reviewSvc, "isTrustedHotel")
+Rel(booking, promoSvc, "validate")
+Rel(promoSvc, userSvc, "status (VIP)")
+Rel_L(grpcProxy, booking, "extends")
+Rel(booking, db, "Read/Write booking")
+Rel(userSvc, db, "Read")
+Rel(hotelSvc, db, "Read")
+Rel(promoSvc, db, "Read")
+Rel(reviewSvc, db, "Read")
+
+@enduml
